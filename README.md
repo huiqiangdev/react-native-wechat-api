@@ -9,10 +9,10 @@
 ## Installation
 
 ```sh
-npm install react-native-wechat-api
+npm install @huiqiangdev/react-native-wechat-api
 ```
 ```sh
-yarn add react-native-wechat-api
+yarn add @huiqiangdev/react-native-wechat-api
 ```
 
 ## Start
@@ -33,7 +33,7 @@ yarn add react-native-wechat-api
 This method should be called once globally.
 
 ```js
-import * as WeChat from 'react-native-wechat-api';
+import * as WeChat from '@huiqiangdev/react-native-wechat-api';
 
 WeChat.registerApp('appid', 'universalLink');
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "react-native-wechat-api",
+  "name": "@huiqiangdev/react-native-wechat-api",
   "version": "1.0.0",
   "description": "微信SDK",
   "main": "lib/commonjs/index",
