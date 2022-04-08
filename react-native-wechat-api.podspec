@@ -16,4 +16,13 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm}"
 
   s.dependency "React-Core"
+  s.vendored_libraries = "ios/libWeChatSDK.a"
+  s.requires_arc = true
+  s.frameworks = 'SystemConfiguration','CoreTelephony','WebKit'
+  s.library = 'sqlite3','c++','z'
+  s.pod_target_xcconfig    = {
+          'OTHER_LDFLAGS' => '-all_load',
+          'VALID_ARCHS' => 'x86_64 armv7 arm64'
+      }
+
 end
