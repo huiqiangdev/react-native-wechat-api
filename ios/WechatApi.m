@@ -476,7 +476,7 @@ RCT_EXPORT_METHOD(chooseInvoice:(NSDictionary *)data
     req.cardSign = data[@"cardSign"];
     req.signType = data[@"signType"];
     
-    [WXApi sendReq:launchMiniProgramReq completion:^(BOOL success) {
+    [WXApi sendReq:req completion:^(BOOL success) {
         if (success) {
             resolve(@YES);
         } else {
