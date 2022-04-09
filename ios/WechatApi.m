@@ -1,5 +1,8 @@
 #import "WechatApi.h"
 #import <React/RCTLog.h>
+#import <React/RCTImageLoader.h>
+#import <React/RCTBridge.h>
+
 
 // Define error messages
 #define NOT_REGISTERED (@"registerApp required.")
@@ -448,6 +451,188 @@ RCT_EXPORT_METHOD(shareMiniProgram:(NSDictionary *)data
         }
     }];
 }
+RCT_EXPORT_METHOD(shareToSession:(NSDictionary *)data
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+    [self shareToWeixinWithData:data scene:WXSceneSession resolver:resolve rejecter:reject];
+}
+
+RCT_EXPORT_METHOD(shareToTimeline:(NSDictionary *)data
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+    [self shareToWeixinWithData:data scene:WXSceneTimeline resolver:resolve rejecter:reject];
+}
+- (void)shareToWeixinWithData:(NSDictionary *)aData scene:(int)aScene resolver:(RCTPromiseResolveBlock)resolve
+                     rejecter:(RCTPromiseRejectBlock)reject
+{
+    NSString *imageUrl = aData[RCTWXShareTypeThumbImageUrl];
+    if (imageUrl.length && self.bridge.imageLoader) {
+        NSURL *url = [NSURL URLWithString:imageUrl];
+        NSURLRequest *imageRequest = [NSURLRequest requestWithURL:url];
+        [self.bridge.imageLoader loadImageWithURLRequest:imageRequest size:CGSizeMake(100, 100) scale:1 clipped:FALSE resizeMode:RCTResizeModeStretch progressBlock:nil partialLoadBlock:nil
+            completionBlock:^(NSError *error, UIImage *image) {
+            [self shareToWeixinWithData:aData thumbImage:image scene:aScene resolver:resolve rejecter:reject];
+        }];
+    } else {
+        [self shareToWeixinWithData:aData thumbImage:nil scene:aScene resolver:resolve rejecter:reject];
+    }
+
+}
+- (void)shareToWeixinWithData:(NSDictionary *)aData
+                   thumbImage:(UIImage *)aThumbImage
+                        scene:(int)aScene
+                     resolver:(RCTPromiseResolveBlock)resolve
+                                          rejecter:(RCTPromiseRejectBlock)reject
+{
+    NSString *type = aData[RCTWXShareType];
+
+    if ([type isEqualToString:RCTWXShareTypeText]) {
+        
+    } else {
+        NSString * title = aData[RCTWXShareTitle];
+        NSString * description = aData[RCTWXShareDescription];
+        NSString * mediaTagName = aData[@"mediaTagName"];
+        NSString * messageAction = aData[@"messageAction"];
+        NSString * messageExt = aData[@"messageExt"];
+
+        if (type.length <= 0 || [type isEqualToString:RCTWXShareTypeNews]) {
+            NSString * webpageUrl = aData[RCTWXShareWebpageUrl];
+            if (webpageUrl.length <= 0) {
+                reject(@"分享",@"webpageUrl 必须传",nil);
+                return;
+            }
+
+            WXWebpageObject* webpageObject = [WXWebpageObject object];
+            webpageObject.webpageUrl = webpageUrl;
+
+            [self shareToWeixinWithMediaMessage:aScene
+                                          Title:title
+                                    Description:description
+                                         Object:webpageObject
+                                     MessageExt:messageExt
+                                  MessageAction:messageAction
+                                     ThumbImage:aThumbImage
+                                       MediaTag:mediaTagName
+                                       resolver:resolve rejecter:reject];
+
+        } else if ([type isEqualToString:RCTWXShareTypeAudio]) {
+            WXMusicObject *musicObject = [WXMusicObject new];
+            musicObject.musicUrl = aData[@"musicUrl"];
+            musicObject.musicLowBandUrl = aData[@"musicLowBandUrl"];
+            musicObject.musicDataUrl = aData[@"musicDataUrl"];
+            musicObject.musicLowBandDataUrl = aData[@"musicLowBandDataUrl"];
+
+            [self shareToWeixinWithMediaMessage:aScene
+                                          Title:title
+                                    Description:description
+                                         Object:musicObject
+                                     MessageExt:messageExt
+                                  MessageAction:messageAction
+                                     ThumbImage:aThumbImage
+                                       MediaTag:mediaTagName
+                                       resolver:resolve rejecter:reject];
+
+        } else if ([type isEqualToString:RCTWXShareTypeVideo]) {
+            WXVideoObject *videoObject = [WXVideoObject new];
+            videoObject.videoUrl = aData[@"videoUrl"];
+            videoObject.videoLowBandUrl = aData[@"videoLowBandUrl"];
+
+            [self shareToWeixinWithMediaMessage:aScene
+                                          Title:title
+                                    Description:description
+                                         Object:videoObject
+                                     MessageExt:messageExt
+                                  MessageAction:messageAction
+                                     ThumbImage:aThumbImage
+                                       MediaTag:mediaTagName
+                                       resolver:resolve rejecter:reject];
+
+        } else if ([type isEqualToString:RCTWXShareTypeImageUrl] ||
+                   [type isEqualToString:RCTWXShareTypeImageFile] ||
+                   [type isEqualToString:RCTWXShareTypeImageResource]) {
+            NSURL *url = [NSURL URLWithString:aData[RCTWXShareImageUrl]];
+            NSURLRequest *imageRequest = [NSURLRequest requestWithURL:url];
+            [self.bridge.imageLoader loadImageWithURLRequest:imageRequest callback:^(NSError *error, UIImage *image) {
+                if (image == nil){
+                    reject(@"分享",@"fail to load image resource",nil);
+                } else {
+                    WXImageObject *imageObject = [WXImageObject object];
+                    imageObject.imageData = UIImagePNGRepresentation(image);
+                    
+                    [self shareToWeixinWithMediaMessage:aScene
+                                                  Title:title
+                                            Description:description
+                                                 Object:imageObject
+                                             MessageExt:messageExt
+                                          MessageAction:messageAction
+                                             ThumbImage:aThumbImage
+                                               MediaTag:mediaTagName
+                                               resolver:resolve rejecter:reject];
+                    
+                }
+            }];
+        } else if ([type isEqualToString:RCTWXShareTypeFile]) {
+            NSString * filePath = aData[@"filePath"];
+            NSString * fileExtension = aData[@"fileExtension"];
+
+            WXFileObject *fileObject = [WXFileObject object];
+            fileObject.fileData = [NSData dataWithContentsOfFile:filePath];
+            fileObject.fileExtension = fileExtension;
+
+            [self shareToWeixinWithMediaMessage:aScene
+                                          Title:title
+                                    Description:description
+                                         Object:fileObject
+                                     MessageExt:messageExt
+                                  MessageAction:messageAction
+                                     ThumbImage:aThumbImage
+                                       MediaTag:mediaTagName
+                                       resolver:resolve rejecter:reject];
+
+        } else {
+            reject(@"分享",@"message type unsupported",nil);
+        }
+    }
+}
+
+
+
+- (void)shareToWeixinWithMediaMessage:(int)aScene
+                                Title:(NSString *)title
+                          Description:(NSString *)description
+                               Object:(id)mediaObject
+                           MessageExt:(NSString *)messageExt
+                        MessageAction:(NSString *)action
+                           ThumbImage:(UIImage *)thumbImage
+                             MediaTag:(NSString *)tagName
+                             resolver:(RCTPromiseResolveBlock)resolve
+                             rejecter:(RCTPromiseRejectBlock)reject
+{
+    WXMediaMessage *message = [WXMediaMessage message];
+    message.title = title;
+    message.description = description;
+    message.mediaObject = mediaObject;
+    message.messageExt = messageExt;
+    message.messageAction = action;
+    message.mediaTagName = tagName;
+    [message setThumbImage:thumbImage];
+
+    SendMessageToWXReq* req = [SendMessageToWXReq new];
+    req.bText = NO;
+    req.scene = aScene;
+    req.message = message;
+    [WXApi sendReq:req completion:^(BOOL success) {
+        if (success) {
+            resolve(@YES);
+        } else {
+            reject(@"分享",INVOKE_FAILED,nil);
+        }
+    }];
+
+}
+
 RCT_EXPORT_METHOD(subscribeMessage:(NSDictionary *)data
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
@@ -617,5 +802,9 @@ RCT_EXPORT_METHOD(pay:(NSDictionary *)data
         body[@"type"] = @"WXChooseInvoiceResp.Resp";
         [self sendEventWithName:RCTWXEventName body:body];
     }
+}
+#pragma mark-- Events
+- (NSArray<NSString *> *)supportedEvents {
+    return @[RCTWXEventName,RCTWXEventNameWeChatReq];
 }
 @end

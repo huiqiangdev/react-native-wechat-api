@@ -8,6 +8,7 @@ import type {
   PaymentLoad,
   ShareFileMetadata,
   ShareImageMetadata,
+  ShareMetadata,
   ShareMiniProgramMetadata,
   ShareMusicMetadata,
   ShareTextMetadata,
@@ -15,7 +16,8 @@ import type {
   ShareWebpageMetadata,
   SubscribeMessageMetadata,
 } from './types';
-import { EventEmitter, DeviceEventEmitter } from 'react-native';
+import { NativeEventEmitter } from 'react-native';
+import { EventEmitter } from 'events';
 
 const LINKING_ERROR =
   `The package 'react-native-wechat-api' doesn't seem to be linked. Make sure: \n\n` +
@@ -24,14 +26,6 @@ const LINKING_ERROR =
   '- You are not using Expo managed workflow\n';
 
 const emitter = new EventEmitter();
-
-DeviceEventEmitter.addListener('WeChat_Resp', (resp) => {
-  emitter.emit(resp.type, resp);
-});
-
-DeviceEventEmitter.addListener('WeChat_Req', (resp) => {
-  emitter.emit(resp.type, resp);
-});
 
 const WechatApi = NativeModules.WechatApi
   ? NativeModules.WechatApi
@@ -43,6 +37,14 @@ const WechatApi = NativeModules.WechatApi
         },
       }
     );
+const Event = new NativeEventEmitter(WechatApi);
+Event.addListener('WeChat_Resp', (resp) => {
+  emitter.emit(resp.type, resp);
+});
+
+Event.addListener('WeChat_Req', (resp) => {
+  emitter.emit(resp.type, resp);
+});
 /**
  * 是否已经注册过微信
  */
@@ -138,17 +140,13 @@ export function sendAuthRequest(
     } else {
       reject(new Error('registerApp required'));
     }
-    emitter.once(
-      'SendAuth.Resp',
-      (resp) => {
-        if (resp.errCode === 0) {
-          resolve(resp);
-        } else {
-          reject(new WechatError(resp));
-        }
-      },
-      null
-    );
+    emitter.once('SendAuth.Resp', (resp) => {
+      if (resp.errCode === 0) {
+        resolve(resp);
+      } else {
+        reject(new WechatError(resp));
+      }
+    });
   });
 }
 export function shareText(
@@ -164,17 +162,53 @@ export function shareText(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
+    }
+  );
+}
+export function shareToSession(
+  message: ShareMetadata
+): Promise<{ errCode?: number; errStr?: string }> {
+  return new Promise<{ errCode?: number; errStr?: string }>(
+    (resolve, reject) => {
+      if (isAppRegistered) {
+        WechatApi.shareToSession(message).then();
+      } else {
+        reject(new Error('registerApp required'));
+      }
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
+    }
+  );
+}
+export function shareToTimeline(
+  message: ShareMetadata
+): Promise<{ errCode?: number; errStr?: string }> {
+  return new Promise<{ errCode?: number; errStr?: string }>(
+    (resolve, reject) => {
+      if (isAppRegistered) {
+        WechatApi.shareToTimeline(message).then();
+      } else {
+        reject(new Error('registerApp required'));
+      }
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -191,17 +225,13 @@ export function shareImage(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -218,17 +248,13 @@ export function shareLocalImage(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -245,17 +271,13 @@ export function shareMusic(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -272,17 +294,13 @@ export function shareVideo(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -299,17 +317,13 @@ export function shareWebpage(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -329,17 +343,13 @@ export function shareMiniProgram(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -356,17 +366,13 @@ export function shareFile(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'SendMessageToWX.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('SendMessageToWX.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -384,17 +390,13 @@ export function launchCustomerService({
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'WXOpenCustomerServiceReq.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('WXOpenCustomerServiceReq.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -413,17 +415,13 @@ export function launchMiniProgram({
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'WXLaunchMiniProgramReq.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('WXLaunchMiniProgramReq.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -440,17 +438,13 @@ export function subscribeMessage(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'WXSubscribeMsgReq.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('WXSubscribeMsgReq.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -464,26 +458,22 @@ export function chooseInvoice(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'WXChooseInvoiceResp.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            if (Platform.OS === 'android') {
-              const cardItemList = JSON.parse(resp.cardItemList);
-              resp.cards = cardItemList
-                ? cardItemList.map((item: any) => ({
-                    cardId: item.card_id,
-                    encryptCode: item.encrypt_code,
-                  }))
-                : [];
-            }
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
+      emitter.once('WXChooseInvoiceResp.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          if (Platform.OS === 'android') {
+            const cardItemList = JSON.parse(resp.cardItemList);
+            resp.cards = cardItemList
+              ? cardItemList.map((item: any) => ({
+                  cardId: item.card_id,
+                  encryptCode: item.encrypt_code,
+                }))
+              : [];
           }
-        },
-        null
-      );
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
@@ -519,17 +509,13 @@ export function pay(
       } else {
         reject(new Error('registerApp required'));
       }
-      emitter.once(
-        'PayReq.Resp',
-        (resp) => {
-          if (resp.errCode === 0) {
-            resolve(resp);
-          } else {
-            reject(new WechatError(resp));
-          }
-        },
-        null
-      );
+      emitter.once('PayReq.Resp', (resp) => {
+        if (resp.errCode === 0) {
+          resolve(resp);
+        } else {
+          reject(new WechatError(resp));
+        }
+      });
     }
   );
 }
