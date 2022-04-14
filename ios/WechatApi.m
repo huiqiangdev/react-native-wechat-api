@@ -468,10 +468,12 @@ RCT_EXPORT_METHOD(shareToTimeline:(NSDictionary *)data
                      rejecter:(RCTPromiseRejectBlock)reject
 {
     NSString *imageUrl = aData[RCTWXShareTypeThumbImageUrl];
-    if (imageUrl.length && self.bridge.imageLoader) {
+    RCTImageLoader *imageLoader = [self.bridge moduleForClass:[RCTImageLoader class]];
+    
+    if (imageUrl.length && imageLoader) {
         NSURL *url = [NSURL URLWithString:imageUrl];
         NSURLRequest *imageRequest = [NSURLRequest requestWithURL:url];
-        [self.bridge.imageLoader loadImageWithURLRequest:imageRequest size:CGSizeMake(100, 100) scale:1 clipped:FALSE resizeMode:RCTResizeModeStretch progressBlock:nil partialLoadBlock:nil
+        [imageLoader loadImageWithURLRequest:imageRequest size:CGSizeMake(100, 100) scale:1 clipped:FALSE resizeMode:RCTResizeModeStretch progressBlock:nil partialLoadBlock:nil
             completionBlock:^(NSError *error, UIImage *image) {
             [self shareToWeixinWithData:aData thumbImage:image scene:aScene resolver:resolve rejecter:reject];
         }];
@@ -487,7 +489,7 @@ RCT_EXPORT_METHOD(shareToTimeline:(NSDictionary *)data
                                           rejecter:(RCTPromiseRejectBlock)reject
 {
     NSString *type = aData[RCTWXShareType];
-
+    RCTImageLoader *imageLoader = [self.bridge moduleForClass:[RCTImageLoader class]];
     if ([type isEqualToString:RCTWXShareTypeText]) {
         
     } else {
@@ -554,7 +556,8 @@ RCT_EXPORT_METHOD(shareToTimeline:(NSDictionary *)data
                    [type isEqualToString:RCTWXShareTypeImageResource]) {
             NSURL *url = [NSURL URLWithString:aData[RCTWXShareImageUrl]];
             NSURLRequest *imageRequest = [NSURLRequest requestWithURL:url];
-            [self.bridge.imageLoader loadImageWithURLRequest:imageRequest callback:^(NSError *error, UIImage *image) {
+            
+            [imageLoader loadImageWithURLRequest:imageRequest callback:^(NSError *error, UIImage *image) {
                 if (image == nil){
                     reject(@"分享",@"fail to load image resource",nil);
                 } else {
